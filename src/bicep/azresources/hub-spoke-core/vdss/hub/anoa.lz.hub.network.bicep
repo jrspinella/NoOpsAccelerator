@@ -1,17 +1,17 @@
 /*
-SUMMARY: Module to deploy the Hub Network and it's components based on the Azure Mission Landing Zone conceptual architecture 
+SUMMARY: Module to deploy the Hub Network and it's components based on the Azure Mission Landing Zone conceptual architecture
 DESCRIPTION: The following components will be options in this deployment
               Hub Virtual Network (Vnet)
-              Subnets  
+              Subnets
               Route Table
               Network Security Group
-              Log Storage              
-              Private Link            
+              Log Storage
+              Private Link
               Azure Firewall
               Public IPs
               Private DNS Zones - Details of all the Azure Private DNS zones can be found here --> https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-dns#azure-services-dns-zone-configuration
-              DDos Standard Plan (optional)      
-PREREQS: Logging        
+              DDos Standard Plan (optional)
+PREREQS: Logging
 AUTHOR/S: jspinella
 
 */
@@ -237,10 +237,12 @@ param parHubSubnetServiceEndpoints array = [
 ]
 
 // ROUTETABLE PARAMETERS
+
 param parDisableBgpRoutePropagation bool = false
 
 // PRIVATE DNS ZONE PARAMETERS
 
+@description('Switch to Enable Private DNS Zones to create for the Hub Virtual Network. See https://docs.microsoft.com/en-us/azure/templates/microsoft.network/privatednszones?tabs=bicep for valid settings.')
 param parEnablePrivateDnsZones bool = false
 
 // LOGGING PARAMETERS
@@ -281,6 +283,10 @@ param parSupportedClouds array = [
 // STORAGE ACCOUNTS RBAC
 @description('Account for access to Storage')
 param parHubStorageAccountAccess object
+
+// RESOURCE LOCKS
+@description('Switch which allows enable resource locks on all resources. Default: true')
+param parEnableResourceLocks bool = true
 
 /*
   NAMING CONVENTION
@@ -340,7 +346,7 @@ var varRouteTableName = '${varHubSubnetName}-routetable'
 @description('Resource group tags')
 module modTags '../../../Modules/Microsoft.Resources/tags/az.resources.tags.bicep' = {
   name: 'deploy-${varHubShortName}-tags-${parLocation}-${parDeploymentNameSuffix}'
-  params: {    
+  params: {
     tags: parTags
   }
 }
@@ -368,7 +374,7 @@ module modPrivateDnsZonesResourceGroup '../../../Modules/Microsoft.Resources/res
   }
 }
 
-// HUB STORAGE - VDMS
+// HUB STORAGE - VDSS
 
 module modHubLogStorage '../../../Modules/Microsoft.Storage/storageAccounts/az.data.storage.bicep' = {
   name: 'deploy-hub-logStorage-${parLocation}-${parDeploymentNameSuffix}'
@@ -384,14 +390,14 @@ module modHubLogStorage '../../../Modules/Microsoft.Storage/storageAccounts/az.d
         roleDefinitionIdOrName: parHubStorageAccountAccess.roleDefinitionIdOrName
       }
     ] : []
-    lock: 'CanNotDelete'
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modHubResourceGroup
   ]
 }
 
-// HUB NSG - VDMS
+// HUB NSG - VDSS
 
 module modHubNetworkSecurityGroup '../../../Modules/Microsoft.Network/networkSecurityGroups/az.net.network.security.group.with.diagnostics.bicep' = {
   name: 'deploy-hub-networkSecurityGroup-${parLocation}-${parDeploymentNameSuffix}'
@@ -407,10 +413,11 @@ module modHubNetworkSecurityGroup '../../../Modules/Microsoft.Network/networkSec
     diagnosticStorageAccountId: modHubLogStorage.outputs.resourceId
 
     diagnosticLogCategoriesToEnable: parHubNetworkSecurityGroupDiagnosticsLogs
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
 
-// HUB VNET - VDMS
+// HUB VNET - VDSS
 
 module modHubVirtualNetwork '../../../Modules/Microsoft.Network/virtualNetworks/az.net.virtual.network.with.diagnostics.bicep' = {
   name: 'deploy-hub-vnet-${parLocation}-${parDeploymentNameSuffix}'
@@ -433,6 +440,7 @@ module modHubVirtualNetwork '../../../Modules/Microsoft.Network/virtualNetworks/
     diagnosticMetricsToEnable: parHubVirtualNetworkDiagnosticsMetrics
     ddosProtectionPlanEnabled: parDeployddosProtectionPlan
     ddosProtectionPlanId: hubddosName
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
 
@@ -448,20 +456,21 @@ module modHubRouteTable '../../../Modules/Microsoft.Network/routeTable/az.net.ro
       {
         name: 'default_route'
         properties: {
-          addressPrefix: '0.0.0.0/0'    
+          addressPrefix: '0.0.0.0/0'
           nextHopIpAddress: modAzureFirewall.outputs.privateIp
           nextHopType: 'VirtualAppliance'
         }
       }
     ]
     disableBgpRoutePropagation: parDisableBgpRoutePropagation
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modHubResourceGroup
   ]
 }
 
-// HUB SUBNET - VDMS
+// HUB SUBNET - VDSS
 
 module modHubSubnet '../../../Modules/Microsoft.Network/virtualNetworks/subnets/az.net.subnet.bicep' = {
   name: 'deploy-hub-subnet-${parLocation}-${parDeploymentNameSuffix}'
@@ -482,7 +491,7 @@ module modHubSubnet '../../../Modules/Microsoft.Network/virtualNetworks/subnets/
   ]
 }
 
-// HUB FW - CLIENT - VDMS
+// HUB FW - CLIENT - VDSS
 
 module modFirewallClientPublicIPAddress '../../../Modules/Microsoft.Network/publicIPAddress/az.net.public.ip.address.bicep' = {
   name: 'deploy-hub-FW-Client-PIP-${parLocation}-${parDeploymentNameSuffix}'
@@ -503,10 +512,11 @@ module modFirewallClientPublicIPAddress '../../../Modules/Microsoft.Network/publ
     diagnosticMetricsToEnable: parPublicIPAddressDiagnosticsMetrics
     publicIPAddressVersion: 'IPv4'
     skuTier: 'Regional'
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
 
-// HUB FW - MGMT - VDMS
+// HUB FW - MGMT - VDSS
 
 module modFirewallManagementPublicIPAddress '../../../Modules/Microsoft.Network/publicIPAddress/az.net.public.ip.address.bicep' = {
   name: 'deploy-hub-FW-Mgmt-PIP-${parLocation}-${parDeploymentNameSuffix}'
@@ -528,6 +538,7 @@ module modFirewallManagementPublicIPAddress '../../../Modules/Microsoft.Network/
     diagnosticMetricsToEnable: parPublicIPAddressDiagnosticsMetrics
     publicIPAddressVersion: 'IPv4'
     skuTier: 'Regional'
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
 
@@ -546,9 +557,9 @@ module modAzureFirewall '../../../Modules/Microsoft.Network/firewalls/az.net.fir
     isCreateDefaultPublicIP: false
     azureFirewallSubnetPublicIpId: modFirewallClientPublicIPAddress.outputs.resourceId
     azureFirewallMgmtSubnetPublicIpId: modFirewallManagementPublicIPAddress.outputs.resourceId
-    
+
     firewallPolicyId: modAzureFirewallPolicy.outputs.resourceId
-    threatIntelMode: parFirewallThreatIntelMode    
+    threatIntelMode: parFirewallThreatIntelMode
     vNetId: modHubVirtualNetwork.outputs.resourceId
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceResourceId
     diagnosticStorageAccountId: modHubLogStorage.outputs.resourceId
@@ -556,6 +567,7 @@ module modAzureFirewall '../../../Modules/Microsoft.Network/firewalls/az.net.fir
     diagnosticLogCategoriesToEnable: parFirewallDiagnosticsLogs
     diagnosticMetricsToEnable: parFirewallDiagnosticsMetrics
     zones:[]
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
 
@@ -577,27 +589,23 @@ module modAzureFirewallPolicy '../../../Modules/Microsoft.Network/firewallPolici
   ]
 }
 
-// HUB PRIVATE LINK - VDMS
+// HUB PRIVATE DNS - VDSS
 
-module modAzureMonitorPrivateLink '../../../Modules/Microsoft.Network/privateEndPoints/privateLinks/az.net.private.link.bicep' = if (contains(parSupportedClouds, environment().name) && parEnablePrivateDnsZones) {
-  name: 'deploy-hub-az-monitor-prvt-link-${parLocation}-${parDeploymentNameSuffix}'
+module azurePrivateDns '../privateDns/anoa.lz.private.dns.bicep' = if (contains(parSupportedClouds, environment().name) && parEnablePrivateDnsZones) {
+  name: 'deploy-hub-prvt-dns-${parLocation}-${parDeploymentNameSuffix}'
   scope: resourceGroup(parHubSubscriptionId, varHubPDZResourceGroupName)
   params: {
-    logAnalyticsWorkspaceName: parLogAnalyticsWorkspaceName
-    logAnalyticsWorkspaceResourceId: parLogAnalyticsWorkspaceResourceId
-    privateEndpointSubnetName: varHubSubnetName
-    privateEndpointVnetName: modHubVirtualNetwork.outputs.name
     vnetResourceGroup: varHubResourceGroupName
     vnetSubscriptionId: parHubSubscriptionId
-    location: parLocation
-    tags: modTags.outputs.tags     
+    tags: modTags.outputs.tags
+    vnetName: modHubVirtualNetwork.outputs.name
   }
   dependsOn: [
     modHubSubnet
   ]
 }
 
-// HUB ACTIVITY LOGGING - VDMS
+// HUB ACTIVITY LOGGING - VDSS
 
 module hubSubscriptionActivityLogging '../../../Modules/Microsoft.Insights/diagnosticSettings/az.insights.diagnostic.setting.bicep' = {
   name: 'deploy-activity-logs-hub-${parLocation}-${parDeploymentNameSuffix}'
@@ -615,7 +623,6 @@ module hubSubscriptionActivityLogging '../../../Modules/Microsoft.Insights/diagn
       'Autoscale'
       'ResourceHealth'
     ]
-    diagnosticMetricCategoriesToEnable: []
   }
   dependsOn: [
     modHubVirtualNetwork
@@ -637,3 +644,8 @@ output firewallPolicyName string = modAzureFirewallPolicy.outputs.name
 output hubStorageAccountResourceId string = modHubLogStorage.outputs.resourceId
 output hubRouteTableResourceName string = modHubRouteTable.outputs.name
 output hubNetworkSecurityGroupResourceName string = modHubNetworkSecurityGroup.outputs.name
+output azurePrivateDnsMonitoringId string = azurePrivateDns.outputs.monitorPrivateDnsZoneId
+output azurePrivateDnsAgentsvcId string = azurePrivateDns.outputs.agentsvcPrivateDnsZoneId
+output azurePrivateDnsOdsResourceId string = azurePrivateDns.outputs.odsPrivateDnsZoneId
+output azurePrivateDnsOmsResourceId string = azurePrivateDns.outputs.omsPrivateDnsZoneId
+output azurePrivateDnsStorageResourceId string = azurePrivateDns.outputs.storagePrivateDnsZoneId
