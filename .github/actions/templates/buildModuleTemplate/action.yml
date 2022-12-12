@@ -1,0 +1,63 @@
+#########################################################
+## 'Build Module Template' Composite Action            ##
+#########################################################
+##
+## This composite action contains the logic to build the module template form bicep to ARM json.
+##
+#########################################################
+##
+##-------------------------------------------##
+## ACTION PARAMETERS                         ##
+##-------------------------------------------##
+##
+##   |================================================================================================================================|
+##   | Parameter          | Required | Default | Description                                                        | Example         |
+##   |--------------------|----------|---------|--------------------------------------------------------------------------------------|
+##   | moduleTemplatePath | true     | ''      | The path to the module bicep file                                  | './settings.yml'|
+##   |================================================================================================================================|
+##
+##---------------------------------------------##
+
+name: 'Build Module Template'
+description: 'Build Module Template'
+
+inputs:
+  moduleTemplatePath:
+    description: 'The path to the module bicep file'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    # [Setup] task(s)
+    # ---------------
+    - name: 'Setup Agent'
+      shell: pwsh
+      run: |
+        # Grouping task logs
+        Write-Output '::group::Setup Agent'
+        # Load used functions
+        . (Join-Path $env:GITHUB_WORKSPACE 'src/bicep/utilities' 'pipelineTools' 'sharedScripts' 'Set-EnvironmentOnAgent.ps1')
+        # Define PS modules to install on the runner
+        $Modules = @(
+            @{ Name = 'powershell-yaml'; Version = '0.4.2'}
+        )
+        # Set agent up
+        Set-EnvironmentOnAgent -PSModules $Modules
+        Write-Output '::endgroup::'
+    # [Build Module Template] task(s)
+    # ---------------
+    - name: 'Build Module Template'
+      id: set-env-variables
+      shell: pwsh
+      run: |
+        # Grouping task logs
+        Write-Output '::group::Build Module Template'
+        # Resolve template file path
+        $moduleTestFilePath = Join-Path $env:GITHUB_WORKSPACE '${{ inputs.templateFilePath }}'
+        # Determine possible parameters depending on file type
+        if ((Split-Path $moduleTestFilePath -Extension) -eq '.bicep') {
+          $moduleTemplateContent = az bicep build --file $moduleTestFilePath --stdout --only-show-errors | ConvertFrom-Json -AsHashtable
+          $moduleTemplatePossibleParameters = $moduleTemplateContent.parameters.Keys
+        }
+        Write-Output '::endgroup::'
