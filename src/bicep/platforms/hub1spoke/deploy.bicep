@@ -9,16 +9,15 @@ DESCRIPTION: The following components will be options in this deployment
               * Operations Artifacts (Optional)
               * Bastion Host (Optional)
               * Microsoft Defender for Cloud (Optional)
-              * DDOS Standard (Optional)              
+              * DDOS Standard (Optional)
             * Spokes
               * Operations (Tier 1)
             * Logging
               * Azure Sentinel
               * Azure Log Analytics
             * Azure Firewall
-            * Private DNS Zones - Details of all the Azure Private DNS zones can be found here --> [https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-dns#azure-services-dns-zone-configuration](https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-dns#azure-services-dns-zone-configuration)  
+            * Private DNS Zones - Details of all the Azure Private DNS zones can be found here --> [https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-dns#azure-services-dns-zone-configuration](https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-dns#azure-services-dns-zone-configuration)
 AUTHOR/S: jspinella
-VERSION: 1.x.x
 */
 
 targetScope = 'subscription' //Deploying at Subscription scope to allow resource groups to be created and resources in one deployment
@@ -289,7 +288,7 @@ param parSecurityCenter object
 // -----------------------------
 // "parRemoteAccess": {
 //   "value": {
-//     "enable": true,        
+//     "enable": true,
 //     "bastion": {
 //       "sku": "Standard",
 //       "subnetAddressPrefix": "10.0.100.160/27",
@@ -300,7 +299,7 @@ param parSecurityCenter object
 //         "vmName": "bastion-linux",
 //         "vmAdminUsername": "azureuser",
 //         "disablePasswordAuthentication": false,
-//         "vmAdminPasswordOrKey": "Rem0te@2020246",          
+//         "vmAdminPasswordOrKey": "Rem0te@2020246",
 //         "vmSize": "Standard_DS1_v2",
 //         "vmOsDiskCreateOption": "FromImage",
 //         "vmOsDiskType": "Standard_LRS",
@@ -413,6 +412,10 @@ module modLogAnalyticsWorkspace '../../azresources/hub-spoke-core/vdms/logging/a
 
     // RBAC for Storage Parameters
     parLoggingStorageAccountAccess: parLogging.storageAccountAccess
+    parLogStorageSkuName: parLogging.logStorageSkuName
+
+    // Resource Locks for Logging
+    parEnableResourceLocks: parLogging.enableResourceLocks
   }
 }
 
@@ -438,6 +441,9 @@ module modArtifacts '../../azresources/hub-spoke-core/vdss/networkArtifacts/anoa
     parEnableBastionSecrets: parRemoteAccess.enable
     parLinuxVmAdminPasswordOrKey: parRemoteAccess.bastion.linux.vmAdminPasswordOrKey
     parWindowsVmAdminPassword: parRemoteAccess.bastion.windows.vmAdminPassword
+
+    // Resource Locks for Artifacts
+    parEnableResourceLocks: parNetworkArtifacts.enableResourceLocks
   }
 }
 
@@ -474,7 +480,7 @@ module modHubNetwork '../../azresources/hub-spoke-core/vdss/hub/anoa.lz.hub.netw
     // Enable Azure FireWall
     parAzureFirewallEnabled: parAzureFirewall.enable
     parDisableBgpRoutePropagation: parAzureFirewall.disableBgpRoutePropagation
- 
+
     // Hub Firewall Parameters
     parFirewallSupernetIPAddress: parAzureFirewall.supernetIPAddress
     parFirewallSkuTier: parAzureFirewall.skuTier
@@ -493,6 +499,9 @@ module modHubNetwork '../../azresources/hub-spoke-core/vdss/hub/anoa.lz.hub.netw
     // Log Analytics Parameters
     parLogAnalyticsWorkspaceResourceId: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
     parLogAnalyticsWorkspaceName: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceName
+
+    // Resource Locks for Hub
+    parEnableResourceLocks: parHub.enableResourceLocks
 
   }
 }
@@ -519,6 +528,14 @@ module modOperationsNetwork '../../azresources/hub-spoke-core/vdms/operations/an
     parOperationsVirtualNetworkDiagnosticsMetrics: parOperationsSpoke.virtualNetworkDiagnosticsMetrics
     parFirewallPrivateIPAddress: modHubNetwork.outputs.firewallPrivateIPAddress
     parDisableBgpRoutePropagation: true
+    parEnablePrivateDnsZones: parHub.enablePrivateDnsZones
+    parOperationsPrivateDNSResourceIds: parHub.enablePrivateDnsZones ? [
+      modHubNetwork.outputs.azurePrivateDnsMonitoringId
+      modHubNetwork.outputs.azurePrivateDnsAgentsvcId
+      modHubNetwork.outputs.azurePrivateDnsOdsResourceId
+      modHubNetwork.outputs.azurePrivateDnsOmsResourceId
+      modHubNetwork.outputs.azurePrivateDnsStorageResourceId
+    ] : []
 
     // Log Storage Sku Parameters
     parLogStorageSkuName: parLogging.logStorageSkuName
@@ -529,6 +546,9 @@ module modOperationsNetwork '../../azresources/hub-spoke-core/vdms/operations/an
     // Log Analytics Parameters
     parLogAnalyticsWorkspaceResourceId: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
     parLogAnalyticsWorkspaceName: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceName
+
+    // Resource Locks for Operations
+    parEnableResourceLocks: parOperationsSpoke.enableResourceLocks
   }
 }
 
@@ -569,7 +589,7 @@ module modSpokeOpsToHubVirtualNetworkPeerings '../../azresources/hub-spoke-core/
 
 // REMOTE ACCESS
 
-module modRemoteAccess '../../overlays/management-services/bastion/deploy.bicep' = if (parRemoteAccess.enable) {
+module modRemoteAccess '../../overlays/managementServices/bastion/deploy.bicep' = if (parRemoteAccess.enable) {
   name: 'deploy-remote-access-hub-${parLocation}-${parDeploymentNameSuffix}'
   scope: resourceGroup(parHub.subscriptionId, varHubResourceGroupName)
   params: {
@@ -578,12 +598,12 @@ module modRemoteAccess '../../overlays/management-services/bastion/deploy.bicep'
     parLocation: parLocation
     parTags: modTags.outputs.tags
 
-    // Hub Virtual Network Parameters    
+    // Hub Virtual Network Parameters
     parHubVirtualNetworkName: modHubNetwork.outputs.virtualNetworkName
     parHubSubnetResourceId: modHubNetwork.outputs.subnetResourceId
     parHubNetworkSecurityGroupResourceId: modHubNetwork.outputs.networkSecurityGroupResourceId
 
-    // Bastion Host Parameters   
+    // Bastion Host Parameters
     parRemoteAccess: parRemoteAccess
 
     // Log Analytics Parameters
@@ -611,7 +631,7 @@ module modVMExt '../../azresources/Modules/Microsoft.Compute/virtualmachines/ext
 
 // MICROSOFT DEFENDER FOR CLOUD FOR HUB
 
-module modDefender '../../overlays/management-services/azureSecurityCenter/deploy.bicep' = if (parSecurityCenter.enableDefender) {
+module modDefender '../../overlays/managementServices/azureSecurityCenter/deploy.bicep' = if (parSecurityCenter.enableDefender) {
   name: 'deploy-defender-hub-${parLocation}-${parDeploymentNameSuffix}'
   scope: subscription(parHub.subscriptionId)
   params: {
@@ -623,7 +643,7 @@ module modDefender '../../overlays/management-services/azureSecurityCenter/deplo
 
 // MICROSOFT DEFENDER FOR CLOUD FOR SPOKES
 
-module spokeOpsDefender '../../overlays/management-services/azureSecurityCenter/deploy.bicep' = if (parSecurityCenter.enableDefender && parOperationsSpoke.subscriptionId != parHub.subscriptionId) {
+module spokeOpsDefender '../../overlays/managementServices/azureSecurityCenter/deploy.bicep' = if (parSecurityCenter.enableDefender && parOperationsSpoke.subscriptionId != parHub.subscriptionId) {
   name: 'deploy-defender-ops-${parLocation}-${parDeploymentNameSuffix}'
   scope: subscription(parOperationsSpoke.subscriptionId)
   params: {
