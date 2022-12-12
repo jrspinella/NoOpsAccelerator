@@ -24,11 +24,6 @@ env:
   modulePath: 'src/bicep/platforms/hub1spoke'
   moduleTestFilePath: 'src/bicep/utilities/pipelineTools/staticValidation/platform.module.tests.ps1'
   workflowPath: '.github/workflows/platform.hub1spoke.yml'
-  AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-  ARM_SUBSCRIPTION_ID: '${{ secrets.ARM_SUBSCRIPTION_ID }}'
-  ARM_GOV_SUBSCRIPTION_ID: '${{ secrets.ARM_GOV_SUBSCRIPTION_ID }}'
-  ARM_MGMTGROUP_ID: '${{ secrets.ARM_MGMTGROUP_ID }}'
-  ARM_TENANT_ID: '${{ secrets.ARM_TENANT_ID }}'
 
 jobs:
   ###########################
@@ -39,6 +34,11 @@ jobs:
     name: 'Initialize Platforms Pipeline'
     environment:
         name: AzureCommerical
+    env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        ARM_SUBSCRIPTION_ID: '${{ secrets.ARM_SUBSCRIPTION_ID }}'
+        ARM_MGMTGROUP_ID: '${{ secrets.ARM_MGMTGROUP_ID }}'
+        ARM_TENANT_ID: '${{ secrets.ARM_TENANT_ID }}'
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v3
@@ -66,6 +66,11 @@ jobs:
     name: 'Platforms Static File Validation'
     environment:
         name: AzureCommerical
+    env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        ARM_SUBSCRIPTION_ID: '${{ secrets.ARM_SUBSCRIPTION_ID }}'
+        ARM_MGMTGROUP_ID: '${{ secrets.ARM_MGMTGROUP_ID }}'
+        ARM_TENANT_ID: '${{ secrets.ARM_TENANT_ID }}'
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v3
@@ -96,6 +101,11 @@ jobs:
         moduleTestFilePaths: ${{ fromJson(needs.job_initialize_pipeline.outputs.moduleTestFilePaths) }}
     environment:
         name: AzureCommerical
+    env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        ARM_SUBSCRIPTION_ID: '${{ secrets.ARM_SUBSCRIPTION_ID }}'
+        ARM_MGMTGROUP_ID: '${{ secrets.ARM_MGMTGROUP_ID }}'
+        ARM_TENANT_ID: '${{ secrets.ARM_TENANT_ID }}'
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v3
