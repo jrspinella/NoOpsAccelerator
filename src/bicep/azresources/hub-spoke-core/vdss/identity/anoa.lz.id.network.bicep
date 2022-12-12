@@ -1,12 +1,12 @@
 /*
-SUMMARY: Module to deploy the Shared Services Network and it's components based on the Azure Mission Landing Zone conceptual architecture 
+SUMMARY: Module to deploy the Shared Services Network and it's components based on the Azure Mission Landing Zone conceptual architecture
 DESCRIPTION: The following components will be options in this deployment
               Shared Services Virtual Network (Vnet)
-              Subnets  
+              Subnets
               Route Table
               Network Security Group
               Log Storage
-              Activity Logging              
+              Activity Logging
 AUTHOR/S: jspinella
 
 */
@@ -97,7 +97,7 @@ param parIdentitySubnetServiceEndpoints array = [
   }
 ]
 
-// ROUTE TABLE 
+// ROUTE TABLE
 
 @description(' An Array of Routes to be established within the hub route table.')
 param parRouteTableRoutes array = [
@@ -139,6 +139,10 @@ param enableActivityLogging bool = false
 @description('Account for access to Storage')
 param parStorageAccountAccess object
 
+// RESOURCE LOCKS
+@description('Switch which allows enable resource locks on all resources. Default: true')
+param parEnableResourceLocks bool = true
+
 /*
   NAMING CONVENTION
   Here we define a naming conventions for resources.
@@ -175,7 +179,7 @@ var idddosName = replace(varDdosNamingConvention, varNameToken, varIdentityName)
 // ROUTETABLE VALUES
 var varRouteTableName = '${varIdentitySubnetName}-routetable'
 
-// TAGS
+// IDENTITY TAGS - VDSS
 
 @description('Resource group tags')
 module modTags '../../../Modules/Microsoft.Resources/tags/az.resources.tags.bicep' = {
@@ -185,7 +189,7 @@ module modTags '../../../Modules/Microsoft.Resources/tags/az.resources.tags.bice
   }
 }
 
-// RESOURCE GROUPS
+// IDENTITY RESOURCE GROUPS - VDSS
 
 module modIdentityResourceGroup '../../../Modules/Microsoft.Resources/resourceGroups/az.resource.groups.bicep' = {
   name: 'deploy-${varIdentityShortName}-rg-${parLocation}-${parDeploymentNameSuffix}'
@@ -196,6 +200,8 @@ module modIdentityResourceGroup '../../../Modules/Microsoft.Resources/resourceGr
     tags: modTags.outputs.tags
   }
 }
+
+// IDENTITY STORAGE ACCOUNT - VDSS
 
 module modIdentityLogStorage '../../../Modules/Microsoft.Storage/storageAccounts/az.data.storage.bicep' = {
   name: 'deploy-${varIdentityShortName}-logStorage-${parLocation}-${parDeploymentNameSuffix}'
@@ -211,12 +217,14 @@ module modIdentityLogStorage '../../../Modules/Microsoft.Storage/storageAccounts
         roleDefinitionIdOrName: parStorageAccountAccess.roleDefinitionIdOrName
       }
     ] : []
-    lock: 'CanNotDelete'
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modIdentityResourceGroup
   ]
 }
+
+// IDENTITY NSG - VDSS
 
 module modIdentityNetworkSecurityGroup '../../../Modules/Microsoft.Network/networkSecurityGroups/az.net.network.security.group.with.diagnostics.bicep' = {
   name: 'deploy-${varIdentityShortName}-nsg-${parLocation}-${parDeploymentNameSuffix}'
@@ -232,8 +240,11 @@ module modIdentityNetworkSecurityGroup '../../../Modules/Microsoft.Network/netwo
     diagnosticStorageAccountId: modIdentityLogStorage.outputs.resourceId
 
     diagnosticLogCategoriesToEnable: parIdentityNetworkSecurityGroupDiagnosticsLogs
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
+
+// IDENTITY ROUTETABLE - VDSS
 
 module modIdentityRouteTable '../../../Modules/Microsoft.Network/routeTable/az.net.route.table.bicep' = {
   name: 'deploy-${varIdentityShortName}-routeTable-${parLocation}-${parDeploymentNameSuffix}'
@@ -245,11 +256,14 @@ module modIdentityRouteTable '../../../Modules/Microsoft.Network/routeTable/az.n
 
     routes: parRouteTableRoutes
     disableBgpRoutePropagation: parDisableBgpRoutePropagation
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modIdentityResourceGroup
   ]
 }
+
+// IDENTITY VNET WITH SUBNET - VDSS
 
 module modIdentityVirtualNetwork '../../../Modules/Microsoft.Network/virtualNetworks/az.net.virtual.network.with.diagnostics.bicep' = {
   name: 'deploy-${varIdentityShortName}-vnet-${parLocation}-${parDeploymentNameSuffix}'
@@ -280,8 +294,11 @@ module modIdentityVirtualNetwork '../../../Modules/Microsoft.Network/virtualNetw
     diagnosticMetricsToEnable: parIdentityVirtualNetworkDiagnosticsMetrics
     ddosProtectionPlanEnabled: parDeployddosProtectionPlan
     ddosProtectionPlanId: idddosName
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
+
+// IDENTITY SUBSCRIPTION ACTIVITY LOGGING - VDSS
 
 module spokeIdentitySubscriptionActivityLogging '../../../Modules/Microsoft.Insights/diagnosticSettings/az.insights.diagnostic.setting.bicep' = if (enableActivityLogging) {
   name: 'deploy-activity-logs-${varIdentityShortName}-${parLocation}-${parDeploymentNameSuffix}'

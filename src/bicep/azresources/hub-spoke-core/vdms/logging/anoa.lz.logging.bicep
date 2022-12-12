@@ -1,5 +1,5 @@
 /*
-SUMMARY: Module to deploy the Logging based on the Azure Mission Landing Zone conceptual architecture 
+SUMMARY: Module to deploy the Logging based on the Azure Mission Landing Zone conceptual architecture
 DESCRIPTION: The following components will be options in this deployment
               Log Analytics Workspace
               Log Storage
@@ -85,6 +85,10 @@ param parLogStorageSkuName string = 'Standard_GRS'
 @description('Account settings for role assignement to Storage Account')
 param parLoggingStorageAccountAccess object
 
+// RESOURCE LOCKS
+@description('Switch which allows enable resource locks on all resources. Default: true')
+param parEnableResourceLocks bool = true
+
 /*
   NAMING CONVENTION
   Here we define a naming conventions for resources.
@@ -135,7 +139,7 @@ var varSolutions = [
     name: 'VMInsights'
     product: 'OMSGallery/VMInsights'
     publisher: 'Microsoft'
-    promotionCode: '' 
+    promotionCode: ''
   }
   {
     deploy: true
@@ -188,7 +192,7 @@ var varSolutions = [
   }
 ]
 
-// TAGS
+// LOGGING TAGS - VDMS
 
 @description('Resource group tags')
 module modTags '../../../Modules/Microsoft.Resources/tags/az.resources.tags.bicep' = {
@@ -200,7 +204,7 @@ module modTags '../../../Modules/Microsoft.Resources/tags/az.resources.tags.bice
   }
 }
 
-// RESOURCE GROUPS
+// LOGGING RESOURCE GROUPS - VDMS
 
 @description('Logging Resource Group')
 module modLoggingResourceGroup '../../../Modules/Microsoft.Resources/resourceGroups/az.resource.groups.bicep' = {
@@ -213,7 +217,7 @@ module modLoggingResourceGroup '../../../Modules/Microsoft.Resources/resourceGro
   }
 }
 
-// STORAGE ACCOUNT
+// LOGGING STORAGE ACCOUNT - VDMS
 
 @description('Logging Storage Account')
 module modLoggingStorage '../../../Modules/Microsoft.Storage/storageAccounts/az.data.storage.bicep' = {
@@ -226,22 +230,22 @@ module modLoggingStorage '../../../Modules/Microsoft.Storage/storageAccounts/az.
     tags: modTags.outputs.tags
     roleAssignments: (parLoggingStorageAccountAccess.enableRoleAssignmentForStorageAccount) ? [
       {
-        principalIds: parLoggingStorageAccountAccess.principalIds             
+        principalIds: parLoggingStorageAccountAccess.principalIds
         roleDefinitionIdOrName: parLoggingStorageAccountAccess.roleDefinitionIdOrName
       }
     ] : []
-    lock: 'CanNotDelete'
- 
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modLoggingResourceGroup
   ]
 }
 
-// LOG ANALYTICS WORKSPACE
+// LOG ANALYTICS WORKSPACE - VDMS
 
+@description('Log Analytics Workspace')
 module modLogAnalyticsWorkspace '../../../Modules/Microsoft.OperationalInsights/workspaces/az.app.log.analytics.workspace.bicep' = {
-  name: 'deploy-logging-laws-${parLocation}-${parDeploymentNameSuffix}'
+  name: 'deploy-laws-${parLocation}-${parDeploymentNameSuffix}'
   scope: resourceGroup(varLoggingResourceGroupName)
   params: {
     name: varLogAnalyticsWorkspaceName
@@ -250,15 +254,16 @@ module modLogAnalyticsWorkspace '../../../Modules/Microsoft.OperationalInsights/
     serviceTier: parLogAnalyticsWorkspaceSkuName
     dataRetention: parLogAnalyticsWorkspaceRetentionInDays
     dailyQuotaGb: parLogAnalyticsWorkspaceCappingDailyQuotaGb
-    lock: 'CanNotDelete'
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modLoggingResourceGroup
   ]
 }
 
-// LOG ANALYTICS WORKSPACE SOLUTIONS
+// LOG ANALYTICS WORKSPACE SOLUTIONS - VDMS
 
+@description('Log Analytics Workspace Solutions')
 module modLogAnalyticsWorkspaceSolutions '../../../Modules/Microsoft.OperationsManagement/solutions/az.operational.insights.solutions.bicep' = [for solution in varSolutions: if (solution.deploy) {
   name: 'deploy-laws-${solution.name}-${parDeploymentNameSuffix}'
   scope: resourceGroup(varLoggingResourceGroupName)
@@ -267,17 +272,18 @@ module modLogAnalyticsWorkspaceSolutions '../../../Modules/Microsoft.OperationsM
     logAnalyticsWorkspaceName: modLogAnalyticsWorkspace.outputs.name
     name: solution.name
     product: solution.product
-    publisher: solution.publisher    
+    publisher: solution.publisher
   }
 }]
 
-// CENTRAL LOGGING
-
-module logAnalyticsDiagnosticLogging '../../../Modules/Microsoft.Insights/diagnosticSettings/az.insights.diagnostic.setting.bicep' = {
-  name: 'deploy-diagnostic-logging-${parLocation}-${parDeploymentNameSuffix}'
+// Setting log analytics to collect its own diagnostics to itself and to storage
+@description('Log Analytics Workspace Diagnostic Logging')
+module logAnalyticsWorkspaceDiagnosticLogging './anoa.lz.log.analytics.diagnostic.logging.bicep' = {
+  name: 'deploy-diagnostic-logging-${parDeploymentNameSuffix}'
+  scope: resourceGroup(parOperationsSubscriptionId, varLoggingResourceGroupName)
   params: {
-    diagnosticStorageAccountId: modLoggingStorage.outputs.resourceId
-    diagnosticWorkspaceId: modLogAnalyticsWorkspace.outputs.resourceId
+    diagnosticStorageAccountName: modLoggingStorage.outputs.name
+    logAnalyticsWorkspaceName: modLogAnalyticsWorkspace.outputs.name
   }
   dependsOn: [
     modLoggingResourceGroup

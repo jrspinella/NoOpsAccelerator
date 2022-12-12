@@ -1,13 +1,13 @@
 /*
-SUMMARY: Module to deploy the Operations Network and it's components based on the Azure Mission Landing Zone conceptual architecture 
+SUMMARY: Module to deploy the Operations Network and it's components based on the Azure Mission Landing Zone conceptual architecture
 DESCRIPTION: The following components will be options in this deployment
               Operations Virtual Network (Vnet)
-              Subnets  
+              Subnets
               Route Table
               Network Security Group
               Log Storage
               Activity Logging
-              Private DNS Zones - Details of all the Azure Private DNS zones can be found here --> https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-dns#azure-services-dns-zone-configuration     
+              Private DNS Zones - Details of all the Azure Private DNS zones can be found here --> https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-dns#azure-services-dns-zone-configuration
 AUTHOR/S: jspinella
 
 */
@@ -77,6 +77,9 @@ param parOperationsSubnetServiceEndpoints array = [
   }
 ]
 
+@description('An array of Private DNS Resource Ids to enable for the Operations subnet.')
+param parOperationsPrivateDNSResourceIds array = []
+
 // LOGGING PARAMETERS
 
 @description('Log Analytics Workspace Resource Id Needed for NSG, VNet and Activity Logging')
@@ -88,7 +91,7 @@ param parLogAnalyticsWorkspaceName string
 @description('Enable this setting if this network is on a different subscriptiom as the Hub. Will give conflict errors if on same sub as the Hub')
 param enableActivityLogging bool = false
 
-// ROUTE TABLE 
+// ROUTE TABLE
 
 @description(' An Array of Routes to be established within the hub route table.')
 param parRouteTableRoutes array = [
@@ -115,6 +118,22 @@ param parDeployddosProtectionPlan bool = false
 // STORAGE ACCOUNTS RBAC
 @description('Account for access to Storage')
 param parOperationsStorageAccountAccess object
+
+// RESOURCE LOCKS
+@description('Switch which allows enable resource locks on all resources. Default: true')
+param parEnableResourceLocks bool = true
+
+// PRIVATE DNS ZONE PARAMETERS
+
+@description('Switch to Enable Private DNS Zones to create for the Hub Virtual Network. See https://docs.microsoft.com/en-us/azure/templates/microsoft.network/privatednszones?tabs=bicep for valid settings.')
+param parEnablePrivateDnsZones bool = false
+
+// SUPPORTED CLOUDS PARAMETERS
+
+param parSupportedClouds array = [
+  'AzureCloud'
+  'AzureUSGovernment'
+]
 
 /*
   NAMING CONVENTION
@@ -171,14 +190,14 @@ module modOperationsResourceGroup '../../../Modules/Microsoft.Resources/resource
   }
 }
 
-//STORAGE ACCOUNT
+// OPERATIONS STORAGE - VDMS
 
 module modOpsLogStorage '../../../Modules/Microsoft.Storage/storageAccounts/az.data.storage.bicep' = {
   name: 'deploy-${varOperationsShortName}-logStorage-${parLocation}-${parDeploymentNameSuffix}'
-  scope: resourceGroup(varOperationsResourceGroupName) 
+  scope: resourceGroup(varOperationsResourceGroupName)
     params: {
       name: varOperationsLogStorageAccountName
-      location: parLocation   
+      location: parLocation
       storageAccountSku: parLogStorageSkuName
       tags: modTags.outputs.tags
       roleAssignments: (parOperationsStorageAccountAccess.enableRoleAssignmentForStorageAccount) ? [
@@ -187,18 +206,18 @@ module modOpsLogStorage '../../../Modules/Microsoft.Storage/storageAccounts/az.d
           roleDefinitionIdOrName: parOperationsStorageAccountAccess.roleDefinitionIdOrName
         }
       ] : []
-      lock: 'CanNotDelete'    
+      lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modOperationsResourceGroup
   ]
 }
 
-// NETWORK SECURITY GROUP
+// OPERATIONS NSG - VDMS
 
 module modOperationsNetworkSecurityGroup '../../../Modules/Microsoft.Network/networkSecurityGroups/az.net.network.security.group.with.diagnostics.bicep' = {
-  name: 'deploy-${varOperationsShortName}-networkSecurityGroup-${parLocation}-${parDeploymentNameSuffix}' 
-  scope: resourceGroup(varOperationsResourceGroupName)  
+  name: 'deploy-${varOperationsShortName}-networkSecurityGroup-${parLocation}-${parDeploymentNameSuffix}'
+  scope: resourceGroup(varOperationsResourceGroupName)
   params: {
     name: varOperationsNetworkSecurityGroupName
     location: parLocation
@@ -209,13 +228,14 @@ module modOperationsNetworkSecurityGroup '../../../Modules/Microsoft.Network/net
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceResourceId
     diagnosticStorageAccountId: modOpsLogStorage.outputs.resourceId
 
-    diagnosticLogCategoriesToEnable: parOperationsNetworkSecurityGroupDiagnosticsLogs    
+    diagnosticLogCategoriesToEnable: parOperationsNetworkSecurityGroupDiagnosticsLogs
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
 
 module modOperationsRouteTable '../../../Modules/Microsoft.Network/routeTable/az.net.route.table.bicep' = {
-  name: 'deploy-${varOperationsShortName}-routeTable-${parLocation}-${parDeploymentNameSuffix}'  
-  scope: resourceGroup(varOperationsResourceGroupName) 
+  name: 'deploy-${varOperationsShortName}-routeTable-${parLocation}-${parDeploymentNameSuffix}'
+  scope: resourceGroup(varOperationsResourceGroupName)
   params: {
     name: 'ops-routetable'
     location: parLocation
@@ -223,15 +243,18 @@ module modOperationsRouteTable '../../../Modules/Microsoft.Network/routeTable/az
 
     routes: parRouteTableRoutes
     disableBgpRoutePropagation: parDisableBgpRoutePropagation
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
   dependsOn: [
     modOperationsResourceGroup
   ]
 }
 
+// OPERATIONS VNET - VDMS
+
 module modOperationsVirtualNetwork '../../../Modules/Microsoft.Network/virtualNetworks/az.net.virtual.network.with.diagnostics.bicep' = {
-  name: 'deploy-${varOperationsShortName}-virtualNetwork-${parLocation}-${parDeploymentNameSuffix}'  
-  scope: resourceGroup(varOperationsResourceGroupName) 
+  name: 'deploy-${varOperationsShortName}-virtualNetwork-${parLocation}-${parDeploymentNameSuffix}'
+  scope: resourceGroup(varOperationsResourceGroupName)
   params: {
     name: varOperationsVirtualNetworkName
     location: parLocation
@@ -245,10 +268,10 @@ module modOperationsVirtualNetwork '../../../Modules/Microsoft.Network/virtualNe
         {
           addressPrefix: parOperationsSubnetAddressPrefix
           name: varOperationsSubnetName
-          networkSecurityGroupId: modOperationsNetworkSecurityGroup.outputs.resourceId  
+          networkSecurityGroupId: modOperationsNetworkSecurityGroup.outputs.resourceId
           routeTableId: modOperationsRouteTable.outputs.resourceId
           serviceEndpoints: parOperationsSubnetServiceEndpoints
-        } 
+        }
     ]
 
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceResourceId
@@ -258,11 +281,60 @@ module modOperationsVirtualNetwork '../../../Modules/Microsoft.Network/virtualNe
     diagnosticMetricsToEnable: parOperationsVirtualNetworkDiagnosticsMetrics
     ddosProtectionPlanEnabled: parDeployddosProtectionPlan
     ddosProtectionPlanId: opsddosName
+    lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
 }
 
+// OPERATIONS PRIVATE LINK SCOPES - VDMS
+
+module globalPrivateLinkScope '../../../Modules/Microsoft.Network/privateLinkServices/az.net.private.link.service.bicep' = if (contains(parSupportedClouds, environment().name) && parEnablePrivateDnsZones) {
+  name: 'deploy-global-prvt-link-${parDeploymentNameSuffix}'
+  scope: resourceGroup(parOperationsSubscriptionId, varOperationsResourceGroupName)
+  params: {
+    name: 'plscope${parLogAnalyticsWorkspaceName}${substring(uniqueString(subscription().subscriptionId, deployment().name), 0, 8)}'
+    location: 'global'
+  }
+}
+
+module logAnalyticsWorkspacePrivateLinkScope '../../../Modules/Microsoft.Network/privateLinkServices/scopedResources/az.net.private.link.service.scoped.resource.bicep' = if (contains(parSupportedClouds, environment().name) && parEnablePrivateDnsZones) {
+  name: 'deploy-laws-prvt-link-${parDeploymentNameSuffix}'
+  scope: resourceGroup(parOperationsSubscriptionId, varOperationsResourceGroupName)
+  params: {
+    privateLinkScopeName: 'plscope${parLogAnalyticsWorkspaceName}${substring(uniqueString(subscription().subscriptionId, deployment().name), 0, 8)}'
+    privateLinkScopeResourceName: 'plscres${parLogAnalyticsWorkspaceName}${substring(uniqueString(subscription().subscriptionId, deployment().name), 0, 8)}'
+    linkedResourceId: parLogAnalyticsWorkspaceResourceId
+  }
+  dependsOn: [
+    globalPrivateLinkScope
+  ]
+}
+
+module subnetPrivateEndpoint '../../../Modules/Microsoft.Network/privateEndPoints/az.net.private.endpoint.bicep' = {
+  name: 'deploy-subnet-prvt-link-${parDeploymentNameSuffix}'
+  scope: resourceGroup(parOperationsSubscriptionId, varOperationsResourceGroupName)
+  params: {
+    name: 'pl${parLogAnalyticsWorkspaceName}${substring(uniqueString(subscription().subscriptionId, deployment().name), 0, 8)}'
+    groupIds: [
+      'azuremonitor'
+    ]
+    serviceResourceId: globalPrivateLinkScope.outputs.resourceId
+    subnetResourceId:  resourceId(parOperationsSubscriptionId, varOperationsResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', modOperationsVirtualNetwork.outputs.name, modOperationsVirtualNetwork.outputs.subnetNames[0])
+  }
+}
+
+module dnsZonePrivateLinkEndpoint '../../../Modules/Microsoft.Network/privateEndPoints/privateDnsZoneGroups/az.net.private.dns.groups.bicep' = {
+  name: 'deploy-dnsZone-prvtlinkEp-${parDeploymentNameSuffix}'
+  scope: resourceGroup(parOperationsSubscriptionId, varOperationsResourceGroupName)
+  params: {
+    privateDNSResourceIds: parOperationsPrivateDNSResourceIds
+    privateEndpointName: 'pl${parLogAnalyticsWorkspaceName}${substring(uniqueString(subscription().subscriptionId, deployment().name), 0, 8)}'
+  }
+}
+
+// OPERATIONS ACTIVITY LOGGING - VDMS
+
 module spokeOpsSubscriptionActivityLogging '../../../Modules/Microsoft.Insights/diagnosticSettings/az.insights.diagnostic.setting.bicep' = if (enableActivityLogging) {
-  name: 'deploy-activity-logs-${varOperationsShortName}-${parLocation}-${parDeploymentNameSuffix}'  
+  name: 'deploy-activity-logs-${varOperationsShortName}-${parLocation}-${parDeploymentNameSuffix}'
   params: {
     name: 'log-operations-sub-activity-to-${parLogAnalyticsWorkspaceName}'
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceResourceId
@@ -276,7 +348,7 @@ module spokeOpsSubscriptionActivityLogging '../../../Modules/Microsoft.Insights/
       'Autoscale'
       'ResourceHealth'
       'Audit'
-    ]    
+    ]
     diagnosticMetricCategoriesToEnable: [
       'AllMetrics'
     ]
