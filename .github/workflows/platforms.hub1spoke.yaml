@@ -120,7 +120,7 @@ jobs:
         with:
           templateFilePath: '${{ env.modulePath }}/${{ matrix.moduleTestFilePaths }}'
           location: '${{ env.location }}'
-          subscriptionId: '${{ secrets.ARM_SUBSCRIPTION_ID }}'
-          managementGroupId: '${{ secrets.ARM_MGMTGROUP_ID }}'
+          subscriptionId: '${{ env.ARM_SUBSCRIPTION_ID }}'
+          managementGroupId: '${{ env.ARM_MGMTGROUP_ID }}'
           removeDeployment: '${{ inputs.removeDeployment }}'
 
