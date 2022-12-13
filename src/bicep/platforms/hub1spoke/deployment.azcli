@@ -7,7 +7,7 @@ cd src/bicep
 cd platforms/lz-platform-scca-hub-1spoke
 az deployment sub create --name deploy-hub1spoke-network --location EastUS --template-file deploy.bicep  --parameters @parameters/deploy.parameters.json --subscription <<subscriptionId>>
 
-az deployment sub create --name deploy-hub1spoke-t1 --location EastUS --template-file deploy.test.bicep  --subscription 896f5276-df9a-4317-a791-469396bef7fa
+az deployment sub create --name deploy-sa-t1 --location EastUS --template-file deploy.bicep --parameters @parameters/deploy.parameters.json --subscription 896f5276-df9a-4317-a791-469396bef7fa
 
 # Clean Up
 # Delete Resource Locks - Change variables to match your deployment
