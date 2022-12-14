@@ -17,9 +17,6 @@ param diagnosticStorageAccountId string = ''
 @description('Optional. Resource ID of the diagnostic log analytics workspace.')
 param diagnosticWorkspaceId string = ''
 
-@description('Optional. Name of the diagnostic log analytics workspace.')
-param diagnosticWorkspaceName string = ''
-
 @description('Optional. Resource ID of the diagnostic event hub authorization rule for the Event Hubs namespace in which the event hub should be created or streamed to.')
 param diagnosticEventHubAuthorizationRuleId string = ''
 
