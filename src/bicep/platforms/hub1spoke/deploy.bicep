@@ -392,7 +392,7 @@ module modTags '../../azresources/Modules/Microsoft.Resources/tags/az.resources.
 
 // LOGGING & LOG ANALYTICS WORKSPACE
 
-module modLogAnalyticsWorkspace '../../azresources/hub-spoke-core/vdms/logging/anoa.lz.logging.bicep' = {
+module modLogging '../../azresources/hub-spoke-core/vdms/logging/anoa.lz.logging.bicep' = {
   name: 'deploy-laws-${parLocation}-${parDeploymentNameSuffix}'
   scope: subscription(parOperationsSpoke.subscriptionId)
   params: {
@@ -497,8 +497,8 @@ module modHubNetwork '../../azresources/hub-spoke-core/vdss/hub/anoa.lz.hub.netw
     parHubStorageAccountAccess: parHub.storageAccountAccess
 
     // Log Analytics Parameters
-    parLogAnalyticsWorkspaceResourceId: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
-    parLogAnalyticsWorkspaceName: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceName
+    parLogAnalyticsWorkspaceResourceId: modLogging.outputs.outLogAnalyticsWorkspaceResourceId
+    parLogAnalyticsWorkspaceName: modLogging.outputs.outLogAnalyticsWorkspaceName
 
     // Resource Locks for Hub
     parEnableResourceLocks: parHub.enableResourceLocks
@@ -544,8 +544,8 @@ module modOperationsNetwork '../../azresources/hub-spoke-core/vdms/operations/an
     parOperationsStorageAccountAccess: parOperationsSpoke.storageAccountAccess
 
     // Log Analytics Parameters
-    parLogAnalyticsWorkspaceResourceId: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
-    parLogAnalyticsWorkspaceName: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceName
+    parLogAnalyticsWorkspaceResourceId: modLogging.outputs.outLogAnalyticsWorkspaceResourceId
+    parLogAnalyticsWorkspaceName: modLogging.outputs.outLogAnalyticsWorkspaceName
 
     // Resource Locks for Operations
     parEnableResourceLocks: parOperationsSpoke.enableResourceLocks
@@ -607,7 +607,7 @@ module modRemoteAccess '../../overlays/managementServices/bastion/deploy.bicep' 
     parRemoteAccess: parRemoteAccess
 
     // Log Analytics Parameters
-    parLogAnalyticsWorkspaceId: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
+    parLogAnalyticsWorkspaceId: modLogging.outputs.outLogAnalyticsWorkspaceResourceId
   }
 }
 
@@ -636,7 +636,7 @@ module modDefender '../../overlays/managementServices/azureSecurityCenter/deploy
   scope: subscription(parHub.subscriptionId)
   params: {
     parLocation: parLocation
-    parLogAnalyticsWorkspaceResourceId: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
+    parLogAnalyticsWorkspaceResourceId: modLogging.outputs.outLogAnalyticsWorkspaceResourceId
     parSecurityCenter: parSecurityCenter
   }
 }
@@ -648,7 +648,7 @@ module spokeOpsDefender '../../overlays/managementServices/azureSecurityCenter/d
   scope: subscription(parOperationsSpoke.subscriptionId)
   params: {
     parLocation: parLocation
-    parLogAnalyticsWorkspaceResourceId: modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
+    parLogAnalyticsWorkspaceResourceId: modLogging.outputs.outLogAnalyticsWorkspaceResourceId
     parSecurityCenter: parSecurityCenter
   }
 }
@@ -673,8 +673,8 @@ output hub object = {
   networkSecurityGroupResourceId: modHubNetwork.outputs.networkSecurityGroupResourceId
 }
 
-output logAnalyticsWorkspaceName string = modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceName
+output logAnalyticsWorkspaceName string = modLogging.outputs.outLogAnalyticsWorkspaceName
 
-output logAnalyticsWorkspaceResourceId string = modLogAnalyticsWorkspace.outputs.outLogAnalyticsWorkspaceResourceId
+output logAnalyticsWorkspaceResourceId string = modLogging.outputs.outLogAnalyticsWorkspaceResourceId
 
 output diagnosticStorageAccountName string = modOperationsNetwork.outputs.operationsLogStorageAccountName

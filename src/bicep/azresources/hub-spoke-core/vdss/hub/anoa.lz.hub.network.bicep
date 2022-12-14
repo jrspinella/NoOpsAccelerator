@@ -507,9 +507,9 @@ module modFirewallClientPublicIPAddress '../../../Modules/Microsoft.Network/publ
 
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceResourceId
     diagnosticStorageAccountId: modHubLogStorage.outputs.resourceId
-
     diagnosticLogCategoriesToEnable: parPublicIPAddressDiagnosticsLogs
     diagnosticMetricsToEnable: parPublicIPAddressDiagnosticsMetrics
+
     publicIPAddressVersion: 'IPv4'
     skuTier: 'Regional'
     lock: parEnableResourceLocks ? 'CanNotDelete' : ''
@@ -533,9 +533,9 @@ module modFirewallManagementPublicIPAddress '../../../Modules/Microsoft.Network/
 
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceResourceId
     diagnosticStorageAccountId: modHubLogStorage.outputs.resourceId
-
     diagnosticLogCategoriesToEnable: parPublicIPAddressDiagnosticsLogs
     diagnosticMetricsToEnable: parPublicIPAddressDiagnosticsMetrics
+
     publicIPAddressVersion: 'IPv4'
     skuTier: 'Regional'
     lock: parEnableResourceLocks ? 'CanNotDelete' : ''
@@ -563,9 +563,9 @@ module modAzureFirewall '../../../Modules/Microsoft.Network/firewalls/az.net.fir
     vNetId: modHubVirtualNetwork.outputs.resourceId
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceResourceId
     diagnosticStorageAccountId: modHubLogStorage.outputs.resourceId
-
     diagnosticLogCategoriesToEnable: parFirewallDiagnosticsLogs
     diagnosticMetricsToEnable: parFirewallDiagnosticsMetrics
+
     zones:[]
     lock: parEnableResourceLocks ? 'CanNotDelete' : ''
   }
