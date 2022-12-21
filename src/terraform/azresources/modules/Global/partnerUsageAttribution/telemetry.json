@@ -1,0 +1,20 @@
+{
+    "customerUsageAttribution": {
+      "enabled": true,
+      "modules": {
+        "managementGroups": "55a992b5-9ab1-4b3c-8c14-a9a3e5c1e0c2",
+        "policy": "3b7f335c-5580-4035-bc75-c835c15402da",
+        "roles": "5dd6ad4b-bc45-4346-9189-7bc46477182a",
+        "platforms": {
+          "hubspoke1": "69ae5a76-8aae-437d-affa-14c43b5019ea",
+          "hubspoke3": "66764817-8a40-4c5a-a9ea-dee657961d13"
+        },
+        "enclaves": {
+          "sccahubspokeaks": "434fc92b-dbc0-4770-8642-f611851881bd"
+        },
+        "workloads": {
+          "aks": "8790e990-91e2-49ba-8362-f6d9e208a193"
+        }
+      }
+    }
+  }

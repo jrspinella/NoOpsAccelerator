@@ -3,6 +3,25 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Terraform artifacts
+*.tfvars
+*.terraform
+*.tfstate
+*.tfstate.*
+terraform-provider-azurerm_v*
+terraform-provider-random_v*
+*.terraform.lock.hcl
+
+# Terraform logs
+crash.log
+
+# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
+# example: *tfplan*
+*plan*
+!terraform-plan.yml
+!src/bicep/**
+*.plan*
+
 # User-specific files
 *.rsuser
 *.suo

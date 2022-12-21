@@ -1,8 +1,8 @@
 // ----------------------------------------------------------------------------------
 // Copyright (c) Microsoft Corporation. Licensed under the MIT license.
 //
-// THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, 
-// EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES 
+// THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+// EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES
 // OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
 // ----------------------------------------------------------------------------------
 
@@ -225,11 +225,11 @@ module modBastionHost '../../../azresources/Modules/Microsoft.Network/bastionHos
         'AllMetrics'
       ]
       name: varBastionHostPublicIPAddressName
-      publicIPAllocationMethod: varBastionHostPublicIPAddressAllocationMethod     
+      publicIPAllocationMethod: varBastionHostPublicIPAddressAllocationMethod
       skuName: varBastionHostPublicIPAddressSkuName
       skuTier: 'Regional'
     }
-    skuType: parRemoteAccess.bastion.sku    
+    skuType: parRemoteAccess.bastion.sku
   }
   dependsOn: [
     resBastionSubnet
@@ -331,13 +331,13 @@ module modLinuxAvSet '../../../azresources/Modules/Microsoft.Compute/availabilit
 
 module modLinuxVirtualMachine '../../../azresources/Modules/Microsoft.Compute/virtualmachines/az.com.virtual.machine.bicep' = if (parRemoteAccess.bastion.linux.enable) {
   name: 'deploy-ra-linux-vm-${parLocation}-${parDeploymentNameSuffix}'
-  params: {   
-    name: parRemoteAccess.bastion.linux.vmName 
+  params: {
+    name: parRemoteAccess.bastion.linux.vmName
     location: parLocation
     tags: (empty(parTags)) ? modTags : parTags
 
     disablePasswordAuthentication: parRemoteAccess.bastion.linux.disablePasswordAuthentication
-    adminUsername: parRemoteAccess.bastion.linux.vmAdminUsername    
+    adminUsername: parRemoteAccess.bastion.linux.vmAdminUsername
     adminPassword: parRemoteAccess.bastion.linux.vmAdminPasswordOrKey
 
     diagnosticWorkspaceId: parLogAnalyticsWorkspaceId
@@ -403,8 +403,8 @@ module modWinAvSet '../../../azresources/Modules/Microsoft.Compute/availabilityS
 
 module modWindowsVirtualMachine '../../../azresources/Modules/Microsoft.Compute/virtualmachines/az.com.virtual.machine.bicep' = if (parRemoteAccess.bastion.windows.enable) {
   name: 'deploy-ra-windows-vm-${parLocation}-${parDeploymentNameSuffix}'
-  params: {  
-    name: parRemoteAccess.bastion.windows.vmName  
+  params: {
+    name: parRemoteAccess.bastion.windows.vmName
     location: parLocation
     tags: (empty(parTags)) ? modTags : parTags
 

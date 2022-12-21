@@ -1,0 +1,3 @@
+{
+    "ContainerRegistriesShoulNotAllowUnrestrictedNetworkAccess": "/providers/Microsoft.Authorization/policyDefinitions/d0793b48-0edc-4296-a390-4c75d1bdfd71"
+}
