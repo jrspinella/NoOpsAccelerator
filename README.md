@@ -1,82 +1,31 @@
+[![Open Issues](https://img.shields.io/github/issues/Azure/NoOpsAccelerator/issues?color=critical&label=open%20issues&style=flat)](https://github.com/Azure/NoOpsAccelerator/issues?q=is%3Aopen+)
 [![Good First Issues](https://img.shields.io/github/issues/Azure/NoOpsAccelerator/good%20first%20issue?color=important&label=good%20first%20issue&style=flat)](https://github.com/Azure/NoOpsAccelerator/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 [![Needs Feedback](https://img.shields.io/github/issues/Azure/NoOpsAccelerator/needs%20feedback?color=blue&label=needs%20feedback%20&style=flat)](https://github.com/Azure/NoOpsAccelerator/issues?q=is%3Aopen+is%3Aissue+label%3A%22needs+feedback%22)
 
 # Azure NoOps Accelerator
 
-> **"NoOps automates platform administration and broaden communication between developers, cyber, and operations to achieve mission success**." - *John Spinella, Creator of the Azure NoOps Accelerator*
+> **"NoOps automates platform administration and broaden communication between developers, cyber, and operations to achieve mission success**."
 
 **Azure NoOps Accelerator** is a flexible foundation
 that enables US Department of Defense and other Public Sector customers
 to quickly develop and maintain
 opinionated, policy-driven, and self-service
-enclaves in their Azure environments.
+mission enclaves in their Azure environments.
 
-Delivered as a collection of infrastructure as code (IaC) [module templates](https://github.com/Azure/NoOpsAccelerator/tree/main/src/bicep) written in Bicep, the NoOps Accelerator is intended to empower organizations on their journey towards a continuous deployment and governance model for their cloud infrastructure.
+Delivered as a collection of infrastructure as code (IaC) module templates [written in Bicep](https://github.com/Azure/NoOpsAccelerator/tree/main/src/bicep) or [written in Terraform](https://github.com/Azure/NoOpsAccelerator/tree/main/src/terraform), the Azure NoOps Accelerator is intended to empower organizations on their journey towards a continuous deployment and governance model for their cloud infrastructure.
 
 Learn more about the NoOps movement and philosphy here - *[What is NoOps?](https://github.com/Azure/NoOpsAccelerator/tree/main/docs/wiki/What-is-NoOps.md)*.
 
 ## Quickstart
 
-While the NoOps Accelerator can be used to build all sorts of useful solutions, a simple place to start is deploying a workload platform.
-You can use the NoOps Accelerator to deploy [SCCA-compliant landing zones](./src/bicep/platforms/) based on Microsoft's [SACA implementation guidance][saca] and [Mission Landing Zone][mlz] architecture.
+While the Azure NoOps Accelerator can be used to build all sorts of useful solutions, a useful place to start is deploying a Mission Enclave.
 
-### Deploy a SCCA-compliant Landing Zone (SCCA Hub with 3 Spokes) using the Azure CLI
+Mission Enclaves in the Azure NoOps Accelerator are SCCA-compliant based on Microsoft's [SACA implementation guidance][saca] and [Mission Landing Zone][mlz] architecture.
 
-These steps walk through how to use NoOps to deploy a hub and spoke architecture. At the conclusion, you will have five resource groups mapped to the following:
+### Deploy a SCCA-compliant Mission Enclave (SCCA Hub with 3 Spokes with AKS) using the Azure CLI and Bicep or Terraform
 
-* Hub: SCCA-compliant networking hub (1 vnet, 1 resource group)
-* Tier 0 (T0): Identity & Authorization (1 vnet, 1 resource group)
-* Tier 1 (T1): Infrastructure Operations, and Logging (1 vnet, 2 resource groups)
-* Tier 2 (T2): DevSecOps & Shared Services (1 vnet, 1 resource group)
-
-> **Note:** The deployment requires Bicep CLI version 0.11.1 (030248df55) or later. You can check your version by running `bicep --version`. You can upgrade by running `az bicep upgrade`.
-
-Steps:
-
-1. Clone the repository down and change directory to the `lz-platform-scca-hub-3spoke` directory
-
-    ```plaintext
-    git clone https://github.com/Azure/NoOpsAccelerator.git
-    cd NoOpsAccelerator/src/bicep/platforms/lz-platform-scca-hub-3spoke
-    ```
-
-1. Deploy the landing zone with the `az deployment sub create` command.
-For a quickstart, we suggest a test deployment into the current AZ CLI subscription using these parameters:
-
-    * `--name`: (optional) The deployment name, which is visible in the Azure Portal under Subscription/Deployments.
-    * `--location`: (required) The Azure region to store the deployment metadata.
-    * `--template-file`: The file path to the `deploy.bicep` template.
-    * `--parameters`: The file path to the `parameters/deploy.parameters.json` file, preceded by `@`.
-        Individual parameters can be overwritten using `<parameter>=<value>` format as well.
-    * `--subscription`: The GUID for the subscription to deploy into.
-        Multiple subscriptions may be configured (*i.e.*, to have separate subscriptions for each 'tier' in the MLZ architecture) in the `parameters/deploy.parameters.json`
-
-> **IMPORTANT**: All values will need to be updates in the `parameters/deploy.parameters.json`. This allows for consistency in the parameters.  
-
-    Here is an example that deploys into a single subscription in the EastUS region of Azure Commercial:
-
-    ```plaintext
-    # Replace with your test Azure Subscription ID
-    AZ_SUBSCRIPTION="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-
-    az login
-    cd src/bicep
-    cd platforms/lz-platform-scca-hub-3spoke
-    az deployment sub create \
-        --name deploy-scca-hub-with-3-spokes \
-        --location EastUS \
-        --template-file deploy.bicep \
-        --parameters @parameters/deploy.parameters.json \
-        --subscription $AZ_SUBSCRIPTION
-    ```
-
-1. After a successful deployment, see the **[enclaves](./src/bicep/enclaves/)** folder for examples of complete, outcome-driven solutions built using the NoOps Accelerator. Also, be sure to take a look through our **[workloads](.src/bicep/workloads)** and **[overlays](./src/bicep/overlays)** folders to get a sense of the available pieces you can put together with the **platform** you just deployed to solve your mission challenges.
-
-1. Don't forget to **clean-up your environment** by removing all of the resource groups created by the deployment when you are done with this Quickstart.
-
-> Don't have Azure CLI? Here's how to get started with Azure Cloud Shell in your browser: <https://docs.microsoft.com/en-us/azure/cloud-shell/overview>
-
-<!-- For more detailed deployment instructions, see our deployment guides for [Bicep](docs/deployment-guide-bicep.md) and [Terraform](docs/deployment-guide-terraform.md). -->
+* [Quickstart - Bicep](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+* [Quickstart -Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli)
 
 ## Goals and Non-Goals of the Azure NoOps Accelerator Project
 
@@ -95,7 +44,7 @@ For a quickstart, we suggest a test deployment into the current AZ CLI subscript
 * The NoOps Accelerator will not strive for 100% compliance on all deployed Azure Policies for reference implementations. Customers must review [Microsoft Defender for Cloud Regulatory Compliance dashboard](TBD) and apply appropriate exemptions.
 
 <!--
-* Compliant on all Azure Policies when the reference implementation is deployed. This is due to the shared responsibility of cloud and customers can choose the Azure Policies to exclude. For example, using Azure Firewall is an Azure Policy that will be non-compliant since majority of the DOD/Public Sector customers use Network Virtual Appliances. 
+* Compliant on all Azure Policies when the reference implementation is deployed. This is due to the shared responsibility of cloud and customers can choose the Azure Policies to exclude. For example, using Azure Firewall is an Azure Policy that will be non-compliant since majority of the DOD/Public Sector customers use Network Virtual Appliances.
 -->
 
 ## Getting Started

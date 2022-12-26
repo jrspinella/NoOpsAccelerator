@@ -1,16 +1,6 @@
-# NoOps Accelerator - Bicep Modules
+# Azure NoOps Accelerator Azure Bicep Templates
 
-This directory contains all of the modules required to deploy NoOps Accelerator components.
-
-Checkout the [Getting Started](#getting-started) section below for details on where to start, pre-requisites and more.
-
-## Getting Started
-
-To get started with NoOps Accelerator Bicep modules, please refer to the [Architecture wiki page](../../docs/NoOpsAccelerator-Architecture.md) for:
-
-1. Prerequisites and dependencies for the overall reference implementation.
-2. High-level deployment flow.
-3. Links to more detailed instructions on individual modules.
+This folder contains the Azure Bicep templates for deploying Azure NoOps Accelerator modules. See the [Deployment Guide for Bicep](../bicep/examples/deployment-guide-bicep.md) for detailed instructions on how to use the templates.
 
 ## Azresources Folder
 
@@ -24,17 +14,11 @@ AzResources are broken into 3 folders:
 
 - Hub/Spoke Core
 - Modules
-- Policy
-
-## Enclave folder
-
-The Enclave Archetype directory allows you to create core modules to depoyment of an enclave.
-
->Example deployments can be an AKS if used with Hub/ 1 Spoke.
+- Overlays
 
 ## Overlays folder
 
-The Overlays directory are to show how to add on functionality of Enclaves, Platform and Workload Archtypes.
+The Overlays directory are to show how to add on functionality of Enclaves, Platform and Workload modules.
 
 | Overlay | Description |
 | ------- | ----------- |
@@ -45,7 +29,11 @@ The Overlays directory are to show how to add on functionality of Enclaves, Plat
 
 You [must first deploy landing zone or enclave](../../docs/wiki/archetypes/Platform/authoring-guide.md), then you can deploy these overlays.
 
-## Platform folder
+## Examples folder
+
+The examples folder contains a set of examples that demonstrate how to use the Azure NoOps Accelerator Bicep modules to deploy Mission Envlaves.
+
+## Platforms folder
 
 The Platform Archetype directory allows you to create core modules that will depoyment of a custom landing zone. These modules are used with other modules.
 
